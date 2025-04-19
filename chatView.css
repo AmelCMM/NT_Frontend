@@ -1,0 +1,526 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* Blurred Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2e2e2e 0%, #1a3c34 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Login and Account Containers */
+.login-container,
+.account-container {
+    position: relative;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    margin: 20px;
+}
+
+/* Chat Container */
+.chat-container {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    height: 100vh;
+    margin: 0 auto;
+    background: rgba(0, 0, 0, 0.85);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Chat Sidebar */
+.chat-sidebar {
+    width: 300px;
+    background: #1a1a1a;
+    border-right: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-header h2 {
+    font-size: 1.5rem;
+    color: #00ff00;
+    font-weight: 600;
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    color: #ff4444;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.logout-btn i {
+    margin-right: 5px;
+}
+
+.logout-btn:hover {
+    color: #ff6666;
+}
+
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.chat-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid #333;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.chat-item:hover {
+    background: #2a2a2a;
+}
+
+.chat-item.active {
+    background: #00ff00;
+    color: #000;
+}
+
+.chat-info h4 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.chat-info p {
+    font-size: 0.85rem;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Chat Main Area */
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    padding: 20px;
+    border-bottom: 1px solid #333;
+}
+
+.chat-header h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #00ff00;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: #111;
+}
+
+.message {
+    max-width: 70%;
+    margin-bottom: 15px;
+    padding: 10px 15px;
+    border-radius: 15px;
+    position: relative;
+}
+
+.message-received {
+    background: #333;
+    color: #fff;
+    margin-right: auto;
+    border-bottom-left-radius: 0;
+}
+
+.message-sent {
+    background: #00ff00;
+    color: #000;
+    margin-left: auto;
+    border-bottom-right-radius: 0;
+}
+
+.message p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.message .timestamp {
+    display: block;
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 5px;
+    text-align: right;
+}
+
+.chat-input {
+    padding: 20px;
+    border-top: 1px solid #333;
+    background: #1a1a1a;
+}
+
+.chat-input .input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 12px 15px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #222;
+    color: #fff;
+    font-size: 0.95rem;
+    transition: border-color 0.3s ease;
+}
+
+.chat-input input:focus {
+    border-color: #00ff00;
+    outline: none;
+}
+
+.chat-input input::placeholder {
+    color: #666;
+}
+
+.send-btn {
+    padding: 12px;
+    background: #00ff00;
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.1s ease;
+}
+
+.send-btn i {
+    font-size: 1rem;
+}
+
+.send-btn:hover {
+    background: #33ff33;
+    transform: translateY(-2px);
+}
+
+.send-btn:active {
+    transform: translateY(0);
+}
+
+/* Styles for Login and Create Account Pages */
+.login-container h1,
+.account-container h1 {
+    font-size: 2.2rem;
+    color: #00ff00;
+    margin-bottom: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.subtitle {
+    font-size: 0.95rem;
+    color: #b0b0b0;
+    margin-bottom: 30px;
+    font-weight: 300;
+}
+
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    font-size: 1rem;
+    color: #e0e0e0;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper i {
+    position: absolute;
+    left: 15px;
+    color: #888;
+    font-size: 1.1rem;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 12px 15px 12px 40px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input-wrapper input:focus {
+    border-color: #00ff00;
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.2);
+    outline: none;
+}
+
+.input-wrapper input::placeholder {
+    color: #666;
+}
+
+.login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.1s ease;
+}
+
+.login-btn i {
+    margin-left: 8px;
+    font-size: 1rem;
+}
+
+.login-btn:hover {
+    background: linear-gradient(90deg, #2563eb, #60a5fa);
+    transform: translateY(-2px);
+}
+
+.login-btn:active {
+    transform: translateY(0);
+}
+
+.create-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(90deg, #15803d, #22c55e);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.1s ease;
+}
+
+.create-btn i {
+    margin-left: 8px;
+    font-size: 1rem;
+}
+
+.create-btn:hover {
+    background: linear-gradient(90deg, #16a34a, #4ade80);
+    transform: translateY(-2px);
+}
+
+.create-btn:active {
+    transform: translateY(0);
+}
+
+.link-text {
+    font-size: 0.9rem;
+    margin: 20px 0;
+    color: #b0b0b0;
+}
+
+.link-text a {
+    color: #7c3aed;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.link-text a:hover {
+    color: #a78bfa;
+    text-decoration: underline;
+}
+
+.info-box {
+    background: #1a3c34;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    text-align: left;
+    margin-top: 20px;
+    border-left: 4px solid #00ff00;
+}
+
+.info-box p {
+    margin: 8px 0;
+    color: #d0d0d0;
+}
+
+/* Error Message */
+.error-message {
+    margin-top: 15px;
+    padding: 10px;
+    background: #ff4444;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* Responsive Design for Chat View */
+@media (max-width: 768px) {
+    .chat-container {
+        flex-direction: column;
+    }
+
+    .chat-sidebar {
+        width: 100%;
+        height: 40vh;
+        border-right: none;
+        border-bottom: 1px solid #333;
+    }
+
+    .chat-main {
+        height: 60vh;
+    }
+
+    .chat-item {
+        padding: 10px 15px;
+    }
+
+    .chat-info h4 {
+        font-size: 1rem;
+    }
+
+    .chat-info p {
+        font-size: 0.8rem;
+    }
+
+    .chat-messages {
+        padding: 15px;
+    }
+
+    .chat-input {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-container,
+    .account-container {
+        padding: 20px;
+        margin: 15px;
+    }
+
+    .login-container h1,
+    .account-container h1 {
+        font-size: 1.8rem;
+    }
+
+    .subtitle {
+        font-size: 0.85rem;
+    }
+
+    .input-wrapper input {
+        padding: 10px 15px 10px 35px;
+        font-size: 0.95rem;
+    }
+
+    .login-btn,
+    .create-btn {
+        padding: 12px;
+        font-size: 1rem;
+    }
+
+    .info-box {
+        font-size: 0.75rem;
+    }
+
+    .chat-sidebar {
+        height: 35vh;
+    }
+
+    .chat-main {
+        height: 65vh;
+    }
+
+    .sidebar-header h2 {
+        font-size: 1.3rem;
+    }
+
+    .logout-btn {
+        font-size: 0.85rem;
+    }
+
+    .chat-header h3 {
+        font-size: 1.1rem;
+    }
+
+    .message {
+        max-width: 80%;
+    }
+
+    .message p {
+        font-size: 0.9rem;
+    }
+
+    .message .timestamp {
+        font-size: 0.7rem;
+    }
+
+    .error-message {
+        font-size: 0.85rem;
+        padding: 8px;
+    }
+      }
