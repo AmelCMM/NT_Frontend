@@ -1,0 +1,245 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #000;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: auto;
+}
+
+/* Blurred Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2e2e2e 0%, #1a3c34 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Login and Account Containers */
+.login-container,
+.account-container {
+    position: relative;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    margin: 20px;
+}
+
+/* Title */
+.login-container h1,
+.account-container h1 {
+    font-size: 2.2rem;
+    color: #00ff00;
+    margin-bottom: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+/* Subtitle */
+.subtitle {
+    font-size: 0.95rem;
+    color: #b0b0b0;
+    margin-bottom: 30px;
+    font-weight: 300;
+}
+
+/* Input Group */
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    font-size: 1rem;
+    color: #e0e0e0;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+/* Input Wrapper with Icon */
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper i {
+    position: absolute;
+    left: 15px;
+    color: #888;
+    font-size: 1.1rem;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 12px 15px 12px 40px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input-wrapper input:focus {
+    border-color: #00ff00;
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.2);
+    outline: none;
+}
+
+.input-wrapper input::placeholder {
+    color: #666;
+}
+
+/* Log In Button */
+.login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.1s ease;
+}
+
+.login-btn i {
+    margin-left: 8px;
+    font-size: 1rem;
+}
+
+.login-btn:hover {
+    background: linear-gradient(90deg, #2563eb, #60a5fa);
+    transform: translateY(-2px);
+}
+
+.login-btn:active {
+    transform: translateY(0);
+}
+
+/* Create Account Button */
+.create-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(90deg, #15803d, #22c55e);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.1s ease;
+}
+
+.create-btn i {
+    margin-left: 8px;
+    font-size: 1rem;
+}
+
+.create-btn:hover {
+    background: linear-gradient(90deg, #16a34a, #4ade80);
+    transform: translateY(-2px);
+}
+
+.create-btn:active {
+    transform: translateY(0);
+}
+
+/* Link Text */
+.link-text {
+    font-size: 0.9rem;
+    margin: 20px 0;
+    color: #b0b0b0;
+}
+
+.link-text a {
+    color: #7c3aed;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.link-text a:hover {
+    color: #a78bfa;
+    text-decoration: underline;
+}
+
+/* Info Box */
+.info-box {
+    background: #1a3c34;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    text-align: left;
+    margin-top: 20px;
+    border-left: 4px solid #00ff00;
+}
+
+.info-box p {
+    margin: 8px 0;
+    color: #d0d0d0;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .login-container,
+    .account-container {
+        padding: 20px;
+        margin: 15px;
+    }
+
+    .login-container h1,
+    .account-container h1 {
+        font-size: 1.8rem;
+    }
+
+    .subtitle {
+        font-size: 0.85rem;
+    }
+
+    .input-wrapper input {
+        padding: 10px 15px 10px 35px;
+        font-size: 0.95rem;
+    }
+
+    .login-btn,
+    .create-btn {
+        padding: 12px;
+        font-size: 1rem;
+    }
+
+    .info-box {
+        font-size: 0.75rem;
+    }
+  }
