@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NT Chat - Messages</title>
+    <link rel="stylesheet" href="/css/chatView.css">
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+    <div class="overlay"></div>
+    <div class="chat-container">
+        <!-- Sidebar with Chat Contacts -->
+        <div class="chat-sidebar" id="chat-sidebar">
+            <div class="sidebar-header">
+                <h2>Chats</h2>
+                <button class="logout-btn" onclick="window.location.href='index.html'">
+                    <i class="fas fa-sign-out-alt"></i> Log Out
+                </button>
+            </div>
+            <div class="chat-list" id="chat-list">
+                <!-- Chat contacts will be dynamically loaded here -->
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-main" id="chat-main">
+            <div class="chat-header" id="chat-header">
+                <h3>Select a chat to start messaging</h3>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <!-- Messages will be dynamically loaded here -->
+            </div>
+            <div class="chat-input">
+                <div class="input-wrapper">
+                    <input type="text" id="message-input" placeholder="Type a message..." aria-hidden="false" />
+                    <button onclick="sendMessage()" class="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data object for chats and messages
+        const chatData = {
+            users: [
+                {
+                    id: 1,
+                    name: "Alice",
+                    lastMessage: "Hey, how's it going?",
+                    messages: [
+                        { sender: "Alice", text: "Hey, how's it going?", timestamp: "10:30 AM" },
+                        { sender: "You", text: "Pretty good, thanks! How about you?", timestamp: "10:32 AM" }
+                    ]
+                },
+                {
+                    id: 2,
+                    name: "Bob",
+                    lastMessage: "See you tomorrow!",
+                    messages: [
+                        { sender: "Bob", text: "Are we meeting tomorrow?", timestamp: "Yesterday" },
+                        { sender: "You", text: "Yes, let's meet at 9 AM.", timestamp: "Yesterday" },
+                        { sender: "Bob", text: "See you tomorrow!", timestamp: "Yesterday" }
+                    ]
+                },
+                {
+                    id: 3,
+                    name: "Charlie",
+                    lastMessage: "Can you send me the file?",
+                    messages: [
+                        { sender: "Charlie", text: "Can you send me the file?", timestamp: "2 days ago" },
+                        { sender: "You", text: "Sure, I'll send it now.", timestamp: "2 days ago" }
+                    ]
+                }
+            ]
+        };
+
+        // Current selected user
+        let selectedUserId = null;
+
+        // Load chat contacts on page load
+        window.onload = function() {
+            loadChatList();
+        };
+
+        // Function to load the chat list in the sidebar
+        function loadChatList() {
+            const chatList = document.getElementById('chat-list');
+            chatList.innerHTML = ''; // Clear existing list
+
+            chatData.users.forEach(user => {
+                const chatItem = document.createElement('div');
+                chatItem.classList.add('chat-item');
+                chatItem.setAttribute('data-user-id', user.id);
+                chatItem.innerHTML = `
+                    <div class="chat-info">
+                        <h4>${user.name}</h4>
+                        <p>${user.lastMessage}</p>
+                    </div>
+                `;
+                chatItem.addEventListener('click', () => openChat(user.id));
+                chatList.appendChild(chatItem);
+            });
+
+            // Show sidebar and hide chat main (initial state)
+            document.getElementById('chat-sidebar').style.display = 'block';
+            document.getElementById('chat-main').style.display = 'none';
+        }
+
+        // Function to open a chat when a user is clicked
+        function openChat(userId) {
+            selectedUserId = userId;
+            const user = chatData.users.find(u => u.id === userId);
+            if (!user) return;
+
+            // Hide sidebar and show chat main
+            document.getElementById('chat-sidebar').style.display = 'none';
+            document.getElementById('chat-main').style.display = 'flex';
+
+            // Update chat header with Back button
+            const chatHeader = document.getElementById('chat-header');
+            chatHeader.innerHTML = `
+                <button class="back-btn" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h3>${user.name}</h3>
+            `;
+
+            // Load messages
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML = ''; // Clear existing messages
+
+            user.messages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', message.sender === 'You' ? 'message-sent' : 'message-received');
+                messageDiv.innerHTML = `
+                    <p>${message.text}</p>
+                    <span class="timestamp">${message.timestamp}</span>
+                `;
+                chatMessages.appendChild(messageDiv);
+            });
+
+            // Scroll to the bottom of the chat
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Function to go back to the chat list
+        function goBack() {
+            selectedUserId = null;
+            document.getElementById('chat-sidebar').style.display = 'block';
+            document.getElementById('chat-main').style.display = 'none';
+            document.getElementById('chat-header').innerHTML = `
+                <h3>Select a chat to start messaging</h3>
+            `;
+            document.getElementById('chat-messages').innerHTML = '';
+        }
+
+        // Function to send a new message
+        function sendMessage() {
+            if (!selectedUserId) return;
+
+            const messageInput = document.getElementById('message-input');
+            const messageText = messageInput.value.trim();
+            if (!messageText) return;
+
+            // Add the message to the user's messages
+            const user = chatData.users.find(u => u.id === selectedUserId);
+            if (user) {
+                const newMessage = {
+                    sender: "You",
+                    text: messageText,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+                user.messages.push(newMessage);
+                user.lastMessage = messageText;
+
+                // Reload the chat list and messages
+                loadChatList();
+                openChat(selectedUserId);
+
+                // Clear the input
+                messageInput.value = '';
+            }
+        }
+
+        // Handle Enter key to send message
+        document.getElementById('message-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Prevent text selection (except in input fields)
+        document.body.style.userSelect = 'none';
+        document.body.style.webkitUserSelect = 'none';
+        document.body.style.MozUserSelect = 'none';
+        document.body.style.msUserSelect = 'none';
+
+        // Allow text selection in input fields
+        document.querySelectorAll('input').forEach(input => {
+            input.style.userSelect = 'auto';
+            input.style.webkitUserSelect = 'auto';
+            input.style.MozUserSelect = 'auto';
+            input.style.msUserSelect = 'auto';
+        });
+
+        // Prevent dragging of links/buttons
+        document.querySelectorAll('a, button').forEach(element => {
+            element.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+            });
+        });
+
+        // Prevent long-click (context menu) and long-press on links/buttons
+        document.querySelectorAll('a, button').forEach(element => {
+            element.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+            });
+
+            let touchTimer;
+            element.addEventListener('touchstart', function(e) {
+                touchTimer = setTimeout(() => {
+                    e.preventDefault();
+                }, 500);
+            });
+
+            element.addEventListener('touchend', function(e) {
+                clearTimeout(touchTimer);
+            });
+
+            element.addEventListener('touchmove', function(e) {
+                clearTimeout(touchTimer);
+            });
+        });
+
+        // Prevent dragging globally
+        document.addEventListener('drag', function(e) {
+            e.preventDefault();
+        });
+    </script>
+</body>
+  </html>
