@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NT Create Account</title>
+    <link rel="stylesheet" href="/css/createAccount.css">
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+    <div class="overlay"></div>
+    <div class="account-container" aria-hidden="true">
+        <h1>NT Chat</h1>
+        <p class="subtitle">End To End Encrypted Chat Platform</p>
+        <form>
+            <div class="input-group">
+                <label for="username">Username</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Choose a username" aria-hidden="false" required />
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Enter your password" aria-hidden="false" required />
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="confirm-password">Confirm Password</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="confirm-password" placeholder="Confirm your password" aria-hidden="false" required />
+                </div>
+            </div>
+            
+            <button type="submit" class="create-btn">
+                <span>Create Account</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+        <p class="link-text">Already have an account? <a href="index.html">Log In</a></p>
+        <div class="info-box">
+            <p>Chats only last as long as you're active or until one user logs out.</p>
+            <p>Password reset isn't supported as we don't use real-world credentials.</p>
+            <p>No data is collected. We follow a No-Log Policy, respecting your privacy. This platform is free to use... Enjoy! 😊</p>
+        </div>
+    </div>
+
+    <script>
+        // Prevent text selection
+        document.body.style.userSelect = 'none';
+        document.body.style.webkitUserSelect = 'none';
+        document.body.style.MozUserSelect = 'none';
+        document.body.style.msUserSelect = 'none';
+
+        // Allow text selection in input fields
+        document.querySelectorAll('input').forEach(input => {
+            input.style.userSelect = 'auto';
+            input.style.webkitUserSelect = 'auto';
+            input.style.MozUserSelect = 'auto';
+            input.style.msUserSelect = 'auto';
+        });
+
+        // Prevent dragging of links
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+            });
+        });
+
+        // Prevent long-click (context menu) and long-press on links
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+            });
+
+            let touchTimer;
+            link.addEventListener('touchstart', function(e) {
+                touchTimer = setTimeout(() => {
+                    e.preventDefault();
+                }, 500);
+            });
+
+            link.addEventListener('touchend', function(e) {
+                clearTimeout(touchTimer);
+            });
+
+            link.addEventListener('touchmove', function(e) {
+                clearTimeout(touchTimer);
+            });
+        });
+
+        // Prevent dragging globally
+        document.addEventListener('drag', function(e) {
+            e.preventDefault();
+        });
+    </script>
+</body>
+              </html>
