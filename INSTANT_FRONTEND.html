@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Encrypted Chat</title>
+  </head>
+  <body>
+    <h2>Private Encrypted Messaging</h2>
+
+    <label>Username:</label>
+    <input id="myUsername" />
+    <button onclick="register()">Register</button><br /><br />
+
+    <label>To:</label>
+    <input id="targetUsername" />
+    <input id="privateMessage" placeholder="Message" />
+    <button onclick="sendEncrypted()">Send</button>
+
+    <ul id="messages"></ul>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+      const socket = io("http://localhost:3000");
+
+      let username = "";
+      let myPrivateKey, myPublicKey;
+      let sharedSecretKey = null;
+
+      async function register() {
+        username = document.getElementById("myUsername").value;
+        const keys = await generateKeys();
+        myPrivateKey = keys.privateKey;
+        myPublicKey = keys.publicKey;
+
+        const exported = await window.crypto.subtle.exportKey(
+          "raw",
+          myPublicKey
+        );
+        const publicKeyB64 = btoa(
+          String.fromCharCode(...new Uint8Array(exported))
+        );
+
+        socket.emit("register", { username, publicKey: publicKeyB64 });
+      }
+
+      async function sendEncrypted() {
+        const to = document.getElementById("targetUsername").value;
+        const message = document.getElementById("privateMessage").value;
+
+        if (!sharedSecretKey) {
+          socket.emit("request_public_key", to);
+          socket.once("public_key_response", async ({ publicKey }) => {
+            sharedSecretKey = await deriveSharedKey(publicKey);
+            const encrypted = await encryptMessage(message);
+            socket.emit("private_message", { to, from: username, encrypted });
+          });
+        } else {
+          const encrypted = await encryptMessage(message);
+          socket.emit("private_message", { to, from: username, encrypted });
+        }
+      }
+
+      socket.on("receive_private", async ({ from, encrypted }) => {
+        if (!sharedSecretKey) {
+          socket.emit("request_public_key", from);
+          socket.once("public_key_response", async ({ publicKey }) => {
+            sharedSecretKey = await deriveSharedKey(publicKey);
+            const msg = await decryptMessage(encrypted);
+            displayMessage(from, msg);
+          });
+        } else {
+          const msg = await decryptMessage(encrypted);
+          displayMessage(from, msg);
+        }
+      });
+
+      function displayMessage(from, message) {
+        const li = document.createElement("li");
+        li.textContent = `[${from}]: ${message}`;
+        document.getElementById("messages").appendChild(li);
+      }
+
+      // --- CRYPTO ---
+
+      async function generateKeys() {
+        return await window.crypto.subtle.generateKey(
+          { name: "ECDH", namedCurve: "P-256" },
+          true,
+          ["deriveKey"]
+        );
+      }
+
+      async function deriveSharedKey(publicKeyB64) {
+        const keyBuffer = Uint8Array.from(atob(publicKeyB64), (c) =>
+          c.charCodeAt(0)
+        );
+        const peerKey = await window.crypto.subtle.importKey(
+          "raw",
+          keyBuffer,
+          { name: "ECDH", namedCurve: "P-256" },
+          true,
+          []
+        );
+
+        return await window.crypto.subtle.deriveKey(
+          { name: "ECDH", public: peerKey },
+          myPrivateKey,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"]
+        );
+      }
+
+      async function encryptMessage(message) {
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const encoded = new TextEncoder().encode(message);
+        const ciphertext = await window.crypto.subtle.encrypt(
+          { name: "AES-GCM", iv },
+          sharedSecretKey,
+          encoded
+        );
+        return {
+          iv: btoa(String.fromCharCode(...iv)),
+          data: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+        };
+      }
+
+      async function decryptMessage({ iv, data }) {
+        const ivBytes = Uint8Array.from(atob(iv), (c) => c.charCodeAt(0));
+        const dataBytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+        const decrypted = await window.crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: ivBytes },
+          sharedSecretKey,
+          dataBytes
+        );
+        return new TextDecoder().decode(decrypted);
+      }
+    </script>
+  </body>
+</html>

@@ -1,104 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NT Create Account</title>
-    <link rel="stylesheet" href="./createAccount.css">
+    <link rel="stylesheet" href="./createAccount.css" />
     <!-- Include Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-</head>
-<body>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+  </head>
+  <body>
     <div class="overlay"></div>
     <div class="account-container" aria-hidden="true">
-        <h1>NT Chat</h1>
-        <p class="subtitle">End To End Encrypted Chat Platform</p>
-        <form>
-            <div class="input-group">
-                <label for="username">Username</label>
-                <div class="input-wrapper">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="username" placeholder="Choose a username" aria-hidden="false" required />
-                </div>
-            </div>
-            
-            <div class="input-group">
-                <label for="password">Password</label>
-                <div class="input-wrapper">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="password" placeholder="Enter your password" aria-hidden="false" required />
-                </div>
-            </div>
-            
-            <div class="input-group">
-                <label for="confirm-password">Confirm Password</label>
-                <div class="input-wrapper">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="confirm-password" placeholder="Confirm your password" aria-hidden="false" required />
-                </div>
-            </div>
-            
-            <button type="submit" class="create-btn">
-                <span>Create Account</span>
-                <i class="fas fa-arrow-right"></i>
-            </button>
-        </form>
-        <p class="link-text">Already have an account? <a href="index.html">Log In</a></p>
-        <div class="info-box">
-            <p>Chats only last as long as you're active or until one user logs out.</p>
-            <p>Password reset isn't supported as we don't use real-world credentials.</p>
-            <p>No data is collected. We follow a No-Log Policy, respecting your privacy. This platform is free to use... Enjoy! 😊</p>
+      <h1>NT Chat</h1>
+      <p class="subtitle">End To End Encrypted Chat Platform</p>
+      <form >
+        <div class="input-group">
+          <label for="username">Username</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user"></i>
+            <input
+              type="text"
+              id="username"
+              placeholder="Choose a username"
+              aria-hidden="false"
+              required
+            />
+          </div>
         </div>
+
+        <div class="input-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock"></i>
+            <input
+              type="password"
+              id="password"
+              placeholder="Enter your password"
+              aria-hidden="false"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="confirm-password">Confirm Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock"></i>
+            <input
+              type="password"
+              id="confirm-password"
+              placeholder="Confirm your password"
+              aria-hidden="false"
+              required
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="create-btn" id="createAccountFormBtn">
+          <span>Create Account</span>
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+      <p class="link-text">
+        Already have an account? <a href="index.html">Log In</a>
+      </p>
+      <div class="info-box">
+        <p>
+          Chats only last as long as you're active or until one user logs out.
+        </p>
+        <p>
+          Password reset isn't supported as we don't use real-world credentials.
+        </p>
+        <p>
+          No data is collected. We follow a No-Log Policy, respecting your
+          privacy. This platform is free to use... Enjoy! 😊
+        </p>
+      </div>
     </div>
 
     <script>
-        // Prevent text selection
-        document.body.style.userSelect = 'none';
-        document.body.style.webkitUserSelect = 'none';
-        document.body.style.MozUserSelect = 'none';
-        document.body.style.msUserSelect = 'none';
+      // Prevent text selection
+      document.body.style.userSelect = "none";
+      document.body.style.webkitUserSelect = "none";
+      document.body.style.MozUserSelect = "none";
+      document.body.style.msUserSelect = "none";
 
-        // Allow text selection in input fields
-        document.querySelectorAll('input').forEach(input => {
-            input.style.userSelect = 'auto';
-            input.style.webkitUserSelect = 'auto';
-            input.style.MozUserSelect = 'auto';
-            input.style.msUserSelect = 'auto';
+      // Allow text selection in input fields
+      document.querySelectorAll("input").forEach((input) => {
+        input.style.userSelect = "auto";
+        input.style.webkitUserSelect = "auto";
+        input.style.MozUserSelect = "auto";
+        input.style.msUserSelect = "auto";
+      });
+
+      // Prevent dragging of links
+      document.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("dragstart", function (e) {
+          e.preventDefault();
+        });
+      });
+
+      // Prevent long-click (context menu) and long-press on links
+      document.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("contextmenu", function (e) {
+          e.preventDefault();
         });
 
-        // Prevent dragging of links
-        document.querySelectorAll('a').forEach(link => {
-            link.addEventListener('dragstart', function(e) {
-                e.preventDefault();
-            });
-        });
-
-        // Prevent long-click (context menu) and long-press on links
-        document.querySelectorAll('a').forEach(link => {
-            link.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-            });
-
-            let touchTimer;
-            link.addEventListener('touchstart', function(e) {
-                touchTimer = setTimeout(() => {
-                    e.preventDefault();
-                }, 500);
-            });
-
-            link.addEventListener('touchend', function(e) {
-                clearTimeout(touchTimer);
-            });
-
-            link.addEventListener('touchmove', function(e) {
-                clearTimeout(touchTimer);
-            });
-        });
-
-        // Prevent dragging globally
-        document.addEventListener('drag', function(e) {
+        let touchTimer;
+        link.addEventListener("touchstart", function (e) {
+          touchTimer = setTimeout(() => {
             e.preventDefault();
+          }, 500);
         });
+
+        link.addEventListener("touchend", function (e) {
+          clearTimeout(touchTimer);
+        });
+
+        link.addEventListener("touchmove", function (e) {
+          clearTimeout(touchTimer);
+        });
+      });
+
+      // Prevent dragging globally
+      document.addEventListener("drag", function (e) {
+        e.preventDefault();
+      });
+
+      // Create an account by sending a POST request
+      function createAccount(username, password) {
+        fetch("https://nt-secure-chat-backend-api.onrender.com/nt_backends_api/v1/create_account", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+                alert("Error: " + response.statusText);
+              throw new Error(
+                "Network response was not ok: " + response.statusText
+              );
+            }
+            return response.json();
+          })
+          .then((data) => {
+            alert("Account created successfully!");
+            // Redirect to the login page or perform any other action
+            window.location.href = "index.html";
+          })
+          .catch((error) => {
+            alert("Try again sometime later!, Something went wrong!");
+          });
+      }
+      document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("createAccountFormBtn");
+
+        form.addEventListener("click", (event) => {
+          event.preventDefault();
+
+          const username = document.getElementById("username").value;
+          const password = document.getElementById("password").value;
+          const confirmPassword =
+            document.getElementById("confirm-password").value;
+          if (!username || !password || !confirmPassword) {
+            alert("Please fill in all fields!");
+            return;
+          }
+          if (username.length < 8) {
+            alert("Username must be at least 8 characters long!");
+            return;
+          }
+          if (password.length < 12) {
+            alert("Password must be at least 12 characters long!");
+            return;
+          }
+          if (password !== confirmPassword) {
+            alert("Passwords do not match!");
+            return;
+          }
+          createAccount(username, password);
+        });
+      });
     </script>
-</body>
-              </html>
+  </body>
+</html>
