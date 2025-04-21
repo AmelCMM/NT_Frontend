@@ -3,270 +3,258 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NT Chat - Encrypted</title>
-    <link rel="stylesheet" href="./chatView.css" />
+    <title>NT Chat - End-to-End Encrypted</title>
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
     />
+    <link rel="stylesheet" href="./chatView.css" />
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   </head>
   <body>
-    <div class="overlay"></div>
-    <div class="chat-container">
-      <!-- Sidebar -->
-      <div class="chat-sidebar" id="chat-sidebar">
-        <div class="sidebar-header">
-          <h2>Chats</h2>
-          <button class="logout-btn" onclick="logout()">
-            <i class="fas fa-sign-out-alt"></i> Log Out
-          </button>
-        </div>
-        <div class="chat-list" id="chat-list"></div>
+    <div id="sidebar">
+      <div class="sidebar-header">
+        <h3>NT Secure Chats</h3>
       </div>
-
-      <!-- Chat -->
-      <div class="chat-main" id="chat-main">
-        <div class="chat-header" id="chat-header">
+      <div class="sidebar-controls">
+        <div class="input-group">
           <input
             type="text"
-            id="target-username"
-            placeholder="Enter username to chat"
-            class="chat-user-input"
+            id="newUser"
+            placeholder="Enter username to chat with"
           />
         </div>
-        <div class="chat-messages" id="chat-messages"></div>
-        <div class="chat-input">
-          <div class="input-wrapper">
-            <input
-              type="text"
-              id="message-input"
-              placeholder="Type a message..."
-            />
-            <button onclick="sendMessage()" class="send-btn">
-              <i class="fas fa-paper-plane"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="new-chat-container">
-        <button class="new-chat-btn" onclick="loadChatList()">
-          <i class="fas fa-comments"></i> New Chat
+        <button onclick="addToChat()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="margin-right: 6px"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Contact
         </button>
       </div>
+      <div id="user-list"></div>
+    </div>
+
+    <div id="chat-area">
+      <div id="chat-header"><h3>Select a contact to start chatting</h3></div>
+      <div id="chat-box"></div>
+      <form id="chat-form">
+        <input
+          type="text"
+          id="message"
+          placeholder="Type your secure message..."
+          autocomplete="off"
+        />
+        <button type="submit">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="margin-right: 6px"
+          >
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+          Send
+        </button>
+      </form>
     </div>
 
     <script>
+      // Fetch session
+      const username = sessionStorage.getItem("ntchat_user");
       const token = sessionStorage.getItem("ntchat_token");
-      const user = JSON.parse(sessionStorage.getItem("ntchat_user"));
-
-      if (!token || !user || !user.username) {
-        window.location.href = "index.html";
+      if (!username || !token) {
+        alert("Please login to continue");
+        window.location.href = "login.html";
       }
 
-      const username = user.username;
-      let myPrivateKey, myPublicKey;
-      let sharedSecrets = {}; // per-contact shared keys
-      const chatData = { users: [] };
-
-      // Socket setup with token auth
-      const socket = io("http://localhost:3000/nt_backends_api/v1/socket.io", {
-        auth: {
-          token,
-          username,
-        },
-        path: "socket.io", // Use correct path
-        transports: ["websocket"], // Optional: force websocket
+      // Socket with auth
+      const socket = io("http://localhost:3000", {
+        path: "/nt_backends_api/v1/socket.io",
+        transports: ["websocket"],
+        auth: { token },
       });
 
-      socket.on("connect_error", (err) => {
-        console.error("Socket connection failed:", err.message);
-        alert("Session expired or unauthorized. Please log in again.");
-        logout();
-      });
+      let myPriv, myPub;
+      const sharedKeys = {};
+      const chatUsers = new Set();
+      let activeChat = null;
 
-      async function register() {
+      const userListDiv = document.getElementById("user-list");
+      const chatHeader = document.getElementById("chat-header");
+      const chatBox = document.getElementById("chat-box");
+      const chatForm = document.getElementById("chat-form");
+      const msgInput = document.getElementById("message");
+
+      socket.on("connect", async () => {
+        chatHeader.innerHTML = `<h3>Welcome, ${
+          JSON.parse(username).username
+        }</h3>`;
+
+        // Generate ECDH keys
         const keys = await window.crypto.subtle.generateKey(
           { name: "ECDH", namedCurve: "P-256" },
           true,
           ["deriveKey"]
         );
-        myPrivateKey = keys.privateKey;
-        myPublicKey = keys.publicKey;
-
-        const exported = await window.crypto.subtle.exportKey(
-          "raw",
-          myPublicKey
-        );
-        const publicKeyB64 = btoa(
-          String.fromCharCode(...new Uint8Array(exported))
-        );
-
-        socket.emit("register", { username, publicKey: publicKeyB64 });
-      }
-
-      async function deriveSharedKey(peerPublicKeyB64) {
-        const keyBuffer = Uint8Array.from(atob(peerPublicKeyB64), (c) =>
-          c.charCodeAt(0)
-        );
-        const peerKey = await window.crypto.subtle.importKey(
-          "raw",
-          keyBuffer,
-          { name: "ECDH", namedCurve: "P-256" },
-          true,
-          []
-        );
-
-        return await window.crypto.subtle.deriveKey(
-          { name: "ECDH", public: peerKey },
-          myPrivateKey,
-          { name: "AES-GCM", length: 256 },
-          false,
-          ["encrypt", "decrypt"]
-        );
-      }
-
-      async function encryptMessage(message, sharedKey) {
-        const iv = window.crypto.getRandomValues(new Uint8Array(12));
-        const encoded = new TextEncoder().encode(message);
-        const ciphertext = await window.crypto.subtle.encrypt(
-          { name: "AES-GCM", iv },
-          sharedKey,
-          encoded
-        );
-        return {
-          iv: btoa(String.fromCharCode(...iv)),
-          data: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
-        };
-      }
-
-      async function decryptMessage({ iv, data }, sharedKey) {
-        const ivBytes = Uint8Array.from(atob(iv), (c) => c.charCodeAt(0));
-        const dataBytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
-        const decrypted = await window.crypto.subtle.decrypt(
-          { name: "AES-GCM", iv: ivBytes },
-          sharedKey,
-          dataBytes
-        );
-        return new TextDecoder().decode(decrypted);
-      }
-
-      // Send encrypted message
-      async function sendMessage() {
-        const to = document.getElementById("target-username").value.trim();
-        const message = document.getElementById("message-input").value.trim();
-        if (!to || !message) return;
-
-        if (!sharedSecrets[to]) {
-          socket.emit("request_public_key", to);
-          socket.once("public_key_response", async ({ publicKey }) => {
-            sharedSecrets[to] = await deriveSharedKey(publicKey);
-            const encrypted = await encryptMessage(message, sharedSecrets[to]);
-            socket.emit("private_message", { to, from: username, encrypted });
-            displayMessage("You ", message);
-          });
-        } else {
-          const encrypted = await encryptMessage(message, sharedSecrets[to]);
-          socket.emit("private_message", { to, from: username, encrypted });
-          displayMessage("You ", message);
-        }
-
-        document.getElementById("message-input").value = "";
-      }
-
-      // Receive encrypted message
-      socket.on("receive_private", async ({ from, encrypted }) => {
-        if (!sharedSecrets[from]) {
-          socket.emit("request_public_key", from);
-          socket.once("public_key_response", async ({ publicKey }) => {
-            sharedSecrets[from] = await deriveSharedKey(publicKey);
-            const message = await decryptMessage(
-              encrypted,
-              sharedSecrets[from]
-            );
-            displayMessage(from, message);
-          });
-        } else {
-          const message = await decryptMessage(encrypted, sharedSecrets[from]);
-          displayMessage(from, message);
-        }
+        myPriv = keys.privateKey;
+        myPub = keys.publicKey;
+        const raw = await window.crypto.subtle.exportKey("raw", myPub);
+        const pubB64 = btoa(String.fromCharCode(...new Uint8Array(raw)));
+        socket.emit("register", { username, publicKey: pubB64 });
       });
 
-      function displayMessage(sender, message) {
-        const chatMessages = document.getElementById("chat-messages");
-        const msgDiv = document.createElement("div");
-        msgDiv.classList.add(
-          "message",
-          sender === "You" ? "message-sent" : "message-received"
-        );
-        msgDiv.innerHTML = `
-          <p>${message}</p>
-          <span class="timestamp">${new Date().toLocaleTimeString()}</span>
-        `;
-        chatMessages.appendChild(msgDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      }
+      function addToChat() {
+        const user = document.getElementById("newUser").value.trim();
+        if (user && user !== username && !chatUsers.has(user)) {
+          chatUsers.add(user);
+          const div = document.createElement("div");
+          div.className = "chat-user";
 
-      document
-        .getElementById("message-input")
-        .addEventListener("keypress", function (e) {
-          if (e.key === "Enter") sendMessage();
-        });
+          // Create avatar with first letter
+          const avatar = document.createElement("div");
+          avatar.className = "user-avatar";
+          avatar.textContent = user.charAt(0).toUpperCase();
 
-      async function loadChatList() {
-        try {
-          const res = await fetch(
-            "http://127.0.0.1:3000/nt_backends_api/v1/getchats",
-            {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
+          // Create username span
+          const nameSpan = document.createElement("span");
+          nameSpan.textContent = user;
 
-          if (!res.ok) throw new Error("Unauthorized or expired session");
-
-          const data = await res.json();
-          chatData.users = data.users;
-          const chatList = document.getElementById("chat-list");
-          chatList.innerHTML = "";
-
-          chatData.users.forEach((user) => {
-            const div = document.createElement("div");
-            div.classList.add("chat-item");
-            div.innerHTML = `<div class="chat-info"><h4>${user.name}</h4><p>${
-              user.lastMessage || ""
-            }</p></div>`;
-            div.onclick = () => {
-              document.getElementById("target-username").value = user.name;
-              document.getElementById("chat-main").style.display = "flex";
-            };
-            chatList.appendChild(div);
-          });
-        } catch (err) {
-          alert(err.message);
-          //logout();
+          div.appendChild(avatar);
+          div.appendChild(nameSpan);
+          div.onclick = () => selectChat(user, div);
+          userListDiv.appendChild(div);
+          document.getElementById("newUser").value = "";
         }
       }
 
-      function logout() {
-        fetch("http://127.0.0.1:3000/nt_backends_api/v1/signout", {
-       
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }).finally(() => {
-          sessionStorage.clear();
-          window.location.href = "./index.html";
+      function selectChat(user, el) {
+        activeChat = user;
+        chatHeader.innerHTML = `<h3>Chatting with ${user}</h3>`;
+        chatBox.innerHTML = "";
+        document
+          .querySelectorAll(".chat-user")
+          .forEach((e) => e.classList.remove("active"));
+        el.classList.add("active");
+        socket.emit("load_history", { withUser: user });
+      }
+
+      socket.on("chat_history", ({ history }) => {
+        chatBox.innerHTML = "";
+        history.forEach((record) =>
+          decryptAndDisplay(record.sender, record.encrypted)
+        );
+      });
+
+      chatForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const txt = msgInput.value.trim();
+        if (!txt || !activeChat) return;
+
+        if (!sharedKeys[activeChat]) await requestKey(activeChat);
+
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const ct = await window.crypto.subtle.encrypt(
+          { name: "AES-GCM", iv },
+          sharedKeys[activeChat],
+          new TextEncoder().encode(txt)
+        );
+
+        const payload = {
+          iv: btoa(String.fromCharCode(...iv)),
+          data: btoa(String.fromCharCode(...new Uint8Array(ct))),
+        };
+
+        socket.emit("private_message", {
+          to: activeChat,
+          from: username,
+          encrypted: payload,
+        });
+
+        displayMessage(username, txt);
+        msgInput.value = "";
+      });
+
+      socket.on("receive_private", async ({ from, encrypted }) => {
+        if (!sharedKeys[from]) await requestKey(from);
+        decryptAndDisplay(from, encrypted);
+      });
+
+      async function requestKey(peer) {
+        return new Promise((resolve) => {
+          socket.emit("request_public_key", peer);
+          socket.once("public_key_response", async ({ publicKey }) => {
+            const buf = Uint8Array.from(atob(publicKey), (c) =>
+              c.charCodeAt(0)
+            );
+            const pubKey = await window.crypto.subtle.importKey(
+              "raw",
+              buf,
+              { name: "ECDH", namedCurve: "P-256" },
+              true,
+              []
+            );
+            sharedKeys[peer] = await window.crypto.subtle.deriveKey(
+              { name: "ECDH", public: pubKey },
+              myPriv,
+              { name: "AES-GCM", length: 256 },
+              false,
+              ["encrypt", "decrypt"]
+            );
+            resolve();
+          });
         });
       }
-      register();
-      loadChatList();
+
+      async function decryptAndDisplay(sender, encrypted) {
+        const iv = Uint8Array.from(atob(encrypted.iv), (c) => c.charCodeAt(0));
+        const data = Uint8Array.from(atob(encrypted.data), (c) =>
+          c.charCodeAt(0)
+        );
+        const pt = await window.crypto.subtle.decrypt(
+          { name: "AES-GCM", iv },
+          sharedKeys[sender],
+          data
+        );
+        const msg = new TextDecoder().decode(pt);
+        displayMessage(sender, msg);
+      }
+
+      function displayMessage(sender, message) {
+        const div = document.createElement("div");
+        div.className =
+          "message " + (sender === username ? "my-message" : "their-message");
+
+        const usernameDiv = document.createElement("div");
+        usernameDiv.className = "message-username";
+        usernameDiv.textContent = sender === username ? "You" : sender;
+
+        const messageDiv = document.createElement("div");
+        messageDiv.textContent = message;
+
+        div.appendChild(usernameDiv);
+        div.appendChild(messageDiv);
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
     </script>
   </body>
 </html>
