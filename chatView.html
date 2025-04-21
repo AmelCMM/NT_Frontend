@@ -83,11 +83,11 @@
       const token = sessionStorage.getItem("ntchat_token");
       if (!username || !token) {
         alert("Please login to continue");
-        window.location.href = "login.html";
+        window.location.href = "index.html";
       }
 
       // Socket with auth
-      const socket = io("http://localhost:3000", {
+      const socket = io("https://nt-secure-chat-backend-api.onrender.com", {
         path: "/nt_backends_api/v1/socket.io",
         transports: ["websocket"],
         auth: { token },
