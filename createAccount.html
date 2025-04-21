@@ -16,7 +16,7 @@
     <div class="account-container" aria-hidden="true">
       <h1>NT Chat</h1>
       <p class="subtitle">End To End Encrypted Chat Platform</p>
-      <form >
+      <form>
         <div class="input-group">
           <label for="username">Username</label>
           <div class="input-wrapper">
@@ -132,7 +132,7 @@
 
       // Create an account by sending a POST request
       function createAccount(username, password) {
-        fetch("https://nt-secure-chat-backend-api.onrender.com/nt_backends_api/v1/create_account", {
+        fetch("http://127.0.0.1:3000/nt_backends_api/v1/create_account", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -141,7 +141,7 @@
         })
           .then((response) => {
             if (!response.ok) {
-                alert("Error: " + response.statusText);
+              alert("Error: " + response.statusText);
               throw new Error(
                 "Network response was not ok: " + response.statusText
               );

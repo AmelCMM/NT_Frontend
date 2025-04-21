@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NT Log In</title>
     <link rel="stylesheet" href="./index.css" />
-    <!-- Include Font Awesome for icons -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
@@ -25,7 +24,6 @@
               type="text"
               id="username"
               placeholder="Enter your username"
-              aria-hidden="false"
               required
             />
           </div>
@@ -39,7 +37,6 @@
               type="password"
               id="password"
               placeholder="Enter your password"
-              aria-hidden="false"
               required
             />
           </div>
@@ -50,109 +47,85 @@
           <i class="fas fa-arrow-right"></i>
         </button>
       </form>
+
       <p class="link-text">
         New to NT Chat? <a href="./createAccount.html">Create Account</a>
       </p>
+
       <div class="info-box">
-        <p>
-          Chats only last as long as you're active or until one user logs out.
-        </p>
-        <p>
-          Password reset isn't supported as we don't use real-world credentials.
-        </p>
-        <p>
-          No data is collected. We follow a No-Log Policy, respecting your
-          privacy. This platform is free to use... Enjoy! 😊
-        </p>
+        <p>Chats only last as long as you're active or until one user logs out.</p>
+        <p>Password reset isn't supported as we don't use real-world credentials.</p>
+        <p>No data is collected. We follow a No-Log Policy, respecting your privacy. This platform is free to use... Enjoy! 😊</p>
       </div>
+
       <div class="error-message" id="error-message" style="display: none"></div>
     </div>
 
     <script>
-      // Function to safely send login data to the server
       async function handleLogin(event) {
-        event.preventDefault(); // Prevent form submission from reloading the page
+        event.preventDefault();
 
-        // Get form inputs
         const usernameInput = document.getElementById("username");
         const passwordInput = document.getElementById("password");
         const errorMessageDiv = document.getElementById("error-message");
 
-        // Clear any previous error messages
         errorMessageDiv.style.display = "none";
         errorMessageDiv.textContent = "";
 
-        // Get values and trim whitespace
         const username = usernameInput.value.trim();
         const password = passwordInput.value.trim();
 
-        // Validate that fields are not empty
         if (!username || !password) {
-          errorMessageDiv.textContent =
-            "Please enter both username and password.";
+          errorMessageDiv.textContent = "Please enter both username and password.";
           errorMessageDiv.style.display = "block";
           return;
         }
 
-        // Sanitization (e.g., prevent script injection)
         const sanitizedUsername = username.replace(/[<>"'();]/g, "");
         const sanitizedPassword = password.replace(/[<>"'();]/g, "");
 
-        // Prepare data to send
         const loginData = {
           username: sanitizedUsername,
           password: sanitizedPassword,
         };
 
         try {
-          // Send data to the server using Fetch API
-          const response = await fetch(
-            "https://nt-secure-chat-backend-api.onrender.com/nt_backends_api/v1/login",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(loginData),
-            }
-          );
-          // Check if the response is OK
+          const response = await fetch("http://127.0.0.1:3000/nt_backends_api/v1/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(loginData),
+          });
+
           if (!response.ok) {
-            throw new Error("Login failed. Please check your credentials");
+            throw new Error("Login failed. Please check your credentials.");
           }
+
           const result = await response.json();
           console.table(result);
-          // Check for success (based on your server's response structure)
-          if (result.success) {
-            // Optionally store a token or user data in localStorage or sessionStorage
-            // Example: Log the token
-            localStorage.setItem("userToken", result.token); // Example: Store a token
-            localStorage.setItem("username", sanitizedUsername); // Store username for chat
-            // Redirect to the chat page
-            console.log("Its me running");
-            window.location.href = "./chatView.html";
+
+          if (result.token && result.user) {
+            sessionStorage.setItem("ntchat_token", result.token); // Secure token
+            sessionStorage.setItem("ntchat_user", JSON.stringify(result.user)); // Secure user info
+            window.location.href = "./chatView.html"; // Go to chat view
           } else {
-            // Display error message from server
-            throw new Error(result.message || "Invalid username or password.");
+            throw new Error(result.message || "Authentication failed.");
           }
         } catch (error) {
-          // Display error message
           errorMessageDiv.textContent = error.message;
           errorMessageDiv.style.display = "block";
         }
       }
-      // Attach the handleLogin function to the form submission
-      document
-        .getElementById("login-form")
-        .addEventListener("submit", handleLogin);
 
-      // Prevent text selection (except in input fields)
+      document.getElementById("login-form").addEventListener("submit", handleLogin);
+
+      // Optional protections
       document.body.style.userSelect = "none";
       document.body.style.webkitUserSelect = "none";
       document.body.style.MozUserSelect = "none";
       document.body.style.msUserSelect = "none";
 
-      // Allow text selection in input fields
       document.querySelectorAll("input").forEach((input) => {
         input.style.userSelect = "auto";
         input.style.webkitUserSelect = "auto";
@@ -160,38 +133,19 @@
         input.style.msUserSelect = "auto";
       });
 
-      // Prevent dragging of links
       document.querySelectorAll("a").forEach((link) => {
-        link.addEventListener("dragstart", function (e) {
-          e.preventDefault();
-        });
-      });
-
-      // Prevent long-click (context menu) and long-press on links
-      document.querySelectorAll("a").forEach((link) => {
-        link.addEventListener("contextmenu", function (e) {
-          e.preventDefault();
-        });
+        link.addEventListener("dragstart", (e) => e.preventDefault());
+        link.addEventListener("contextmenu", (e) => e.preventDefault());
 
         let touchTimer;
-        link.addEventListener("touchstart", function (e) {
-          touchTimer = setTimeout(() => {
-            e.preventDefault();
-          }, 500);
+        link.addEventListener("touchstart", (e) => {
+          touchTimer = setTimeout(() => e.preventDefault(), 500);
         });
-
-        link.addEventListener("touchend", function (e) {
-          clearTimeout(touchTimer);
-        });
-
-        link.addEventListener("touchmove", function (e) {
-          clearTimeout(touchTimer);
-        });
+        link.addEventListener("touchend", () => clearTimeout(touchTimer));
+        link.addEventListener("touchmove", () => clearTimeout(touchTimer));
       });
-      // Prevent dragging globally
-      document.addEventListener("drag", function (e) {
-        e.preventDefault();
-      });
+
+      document.addEventListener("drag", (e) => e.preventDefault());
     </script>
   </body>
 </html>

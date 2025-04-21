@@ -3,48 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NT Chat - Messages</title>
+    <title>NT Chat - Encrypted</title>
     <link rel="stylesheet" href="./chatView.css" />
-    <!-- Include Font Awesome for icons -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   </head>
   <body>
     <div class="overlay"></div>
     <div class="chat-container">
-      <!-- Sidebar with Chat Contacts -->
+      <!-- Sidebar -->
       <div class="chat-sidebar" id="chat-sidebar">
         <div class="sidebar-header">
           <h2>Chats</h2>
-          <button
-            class="logout-btn"
-            onclick="window.location.href='index.html'"
-          >
+          <button class="logout-btn" onclick="logout()">
             <i class="fas fa-sign-out-alt"></i> Log Out
           </button>
         </div>
-        <div class="chat-list" id="chat-list">
-          <!-- Chat contacts will be dynamically loaded here -->
-        </div>
+        <div class="chat-list" id="chat-list"></div>
       </div>
 
-      <!-- Main Chat Area -->
+      <!-- Chat -->
       <div class="chat-main" id="chat-main">
         <div class="chat-header" id="chat-header">
-          <h3>Select a chat to start messaging</h3>
+          <input
+            type="text"
+            id="target-username"
+            placeholder="Enter username to chat"
+            class="chat-user-input"
+          />
         </div>
-        <div class="chat-messages" id="chat-messages">
-          <!-- Messages will be dynamically loaded here -->
-        </div>
+        <div class="chat-messages" id="chat-messages"></div>
         <div class="chat-input">
           <div class="input-wrapper">
             <input
               type="text"
               id="message-input"
               placeholder="Type a message..."
-              aria-hidden="false"
             />
             <button onclick="sendMessage()" class="send-btn">
               <i class="fas fa-paper-plane"></i>
@@ -52,6 +49,7 @@
           </div>
         </div>
       </div>
+
       <div class="new-chat-container">
         <button class="new-chat-btn" onclick="loadChatList()">
           <i class="fas fa-comments"></i> New Chat
@@ -60,206 +58,215 @@
     </div>
 
     <script>
-      const getCSRFToken = () => {
-        const csrfToken = document.cookie.split("; ").find((row) => row.startsWith("csrfToken="));
-        return csrfToken ? csrfToken.split("=")[1] : null;
-      };
-      //const csrf_token = document.cookie.split("; ").find((row) => row.startsWith("csrfToken=")).split("=")[1]
+      const token = sessionStorage.getItem("ntchat_token");
+      const user = JSON.parse(sessionStorage.getItem("ntchat_user"));
 
-      fetch("http://127.0.0.1:3000/nt_backends_api/v1/getchats", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "CSRF-Token":getCSRFToken(),
-        },
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          console.log("Chats loaded successfully:", data);
-          chatData.users = data.users; // Assuming the response contains a `users` array
-          loadChatList();
-        })
-        .catch((error) => {
-          console.error("Error loading chats:", error);
-          alert("Failed to load chats. Please try again later.");
-        });
-
-      // Current selected user
-      let selectedUserId = null;
-
-      /*
-        // Load chat contacts on page load
-        window.onload = function() {
-            loadChatList();
-        };
-        */
-
-      // Function to load the chat list in the sidebar
-      function loadChatList() {
-        const chatList = document.getElementById("chat-list");
-        chatList.innerHTML = ""; // Clear existing list
-
-        chatData.users.forEach((user) => {
-          const chatItem = document.createElement("div");
-          chatItem.classList.add("chat-item");
-          chatItem.setAttribute("data-user-id", user.id);
-          chatItem.innerHTML = `
-                    <div class="chat-info">
-                        <h4>${user.name}</h4>
-                        <p>${user.lastMessage}</p>
-                    </div>
-                `;
-          chatItem.addEventListener("click", () => openChat(user.id));
-          chatList.appendChild(chatItem);
-        });
-
-        // Show sidebar and hide chat main (initial state)
-        document.getElementById("chat-sidebar").style.display = "block";
-        document.getElementById("chat-main").style.display = "none";
+      if (!token || !user || !user.username) {
+        window.location.href = "index.html";
       }
 
-      // Function to open a chat when a user is clicked
-      function openChat(userId) {
-        selectedUserId = userId;
-        const user = chatData.users.find((u) => u.id === userId);
-        if (!user) return;
+      const username = user.username;
+      let myPrivateKey, myPublicKey;
+      let sharedSecrets = {}; // per-contact shared keys
+      const chatData = { users: [] };
 
-        // Hide sidebar and show chat main
-        document.getElementById("chat-sidebar").style.display = "none";
-        document.getElementById("chat-main").style.display = "flex";
+      // Socket setup with token auth
+      const socket = io("http://localhost:3000/nt_backends_api/v1/socket.io", {
+        auth: {
+          token,
+          username,
+        },
+        path: "socket.io", // Use correct path
+        transports: ["websocket"], // Optional: force websocket
+      });
 
-        // Update chat header with Back button
-        const chatHeader = document.getElementById("chat-header");
-        chatHeader.innerHTML = `
-                <button class="back-btn" onclick="goBack()">
-                    <i class="fas fa-arrow-left"></i>
-                </button>
-                <h3>${user.name}</h3>
-            `;
+      socket.on("connect_error", (err) => {
+        console.error("Socket connection failed:", err.message);
+        alert("Session expired or unauthorized. Please log in again.");
+        logout();
+      });
 
-        // Load messages
+      async function register() {
+        const keys = await window.crypto.subtle.generateKey(
+          { name: "ECDH", namedCurve: "P-256" },
+          true,
+          ["deriveKey"]
+        );
+        myPrivateKey = keys.privateKey;
+        myPublicKey = keys.publicKey;
+
+        const exported = await window.crypto.subtle.exportKey(
+          "raw",
+          myPublicKey
+        );
+        const publicKeyB64 = btoa(
+          String.fromCharCode(...new Uint8Array(exported))
+        );
+
+        socket.emit("register", { username, publicKey: publicKeyB64 });
+      }
+
+      async function deriveSharedKey(peerPublicKeyB64) {
+        const keyBuffer = Uint8Array.from(atob(peerPublicKeyB64), (c) =>
+          c.charCodeAt(0)
+        );
+        const peerKey = await window.crypto.subtle.importKey(
+          "raw",
+          keyBuffer,
+          { name: "ECDH", namedCurve: "P-256" },
+          true,
+          []
+        );
+
+        return await window.crypto.subtle.deriveKey(
+          { name: "ECDH", public: peerKey },
+          myPrivateKey,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"]
+        );
+      }
+
+      async function encryptMessage(message, sharedKey) {
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const encoded = new TextEncoder().encode(message);
+        const ciphertext = await window.crypto.subtle.encrypt(
+          { name: "AES-GCM", iv },
+          sharedKey,
+          encoded
+        );
+        return {
+          iv: btoa(String.fromCharCode(...iv)),
+          data: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+        };
+      }
+
+      async function decryptMessage({ iv, data }, sharedKey) {
+        const ivBytes = Uint8Array.from(atob(iv), (c) => c.charCodeAt(0));
+        const dataBytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+        const decrypted = await window.crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: ivBytes },
+          sharedKey,
+          dataBytes
+        );
+        return new TextDecoder().decode(decrypted);
+      }
+
+      // Send encrypted message
+      async function sendMessage() {
+        const to = document.getElementById("target-username").value.trim();
+        const message = document.getElementById("message-input").value.trim();
+        if (!to || !message) return;
+
+        if (!sharedSecrets[to]) {
+          socket.emit("request_public_key", to);
+          socket.once("public_key_response", async ({ publicKey }) => {
+            sharedSecrets[to] = await deriveSharedKey(publicKey);
+            const encrypted = await encryptMessage(message, sharedSecrets[to]);
+            socket.emit("private_message", { to, from: username, encrypted });
+            displayMessage("You ", message);
+          });
+        } else {
+          const encrypted = await encryptMessage(message, sharedSecrets[to]);
+          socket.emit("private_message", { to, from: username, encrypted });
+          displayMessage("You ", message);
+        }
+
+        document.getElementById("message-input").value = "";
+      }
+
+      // Receive encrypted message
+      socket.on("receive_private", async ({ from, encrypted }) => {
+        if (!sharedSecrets[from]) {
+          socket.emit("request_public_key", from);
+          socket.once("public_key_response", async ({ publicKey }) => {
+            sharedSecrets[from] = await deriveSharedKey(publicKey);
+            const message = await decryptMessage(
+              encrypted,
+              sharedSecrets[from]
+            );
+            displayMessage(from, message);
+          });
+        } else {
+          const message = await decryptMessage(encrypted, sharedSecrets[from]);
+          displayMessage(from, message);
+        }
+      });
+
+      function displayMessage(sender, message) {
         const chatMessages = document.getElementById("chat-messages");
-        chatMessages.innerHTML = ""; // Clear existing messages
-
-        user.messages.forEach((message) => {
-          const messageDiv = document.createElement("div");
-          messageDiv.classList.add(
-            "message",
-            message.sender === "You" ? "message-sent" : "message-received"
-          );
-          messageDiv.innerHTML = `
-                    <p>${message.text}</p>
-                    <span class="timestamp">${message.timestamp}</span>
-                `;
-          chatMessages.appendChild(messageDiv);
-        });
-
-        // Scroll to the bottom of the chat
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add(
+          "message",
+          sender === "You" ? "message-sent" : "message-received"
+        );
+        msgDiv.innerHTML = `
+          <p>${message}</p>
+          <span class="timestamp">${new Date().toLocaleTimeString()}</span>
+        `;
+        chatMessages.appendChild(msgDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
       }
 
-      // Function to go back to the chat list
-      function goBack() {
-        selectedUserId = null;
-        document.getElementById("chat-sidebar").style.display = "block";
-        document.getElementById("chat-main").style.display = "none";
-        document.getElementById("chat-header").innerHTML = `
-                <h3>Select a chat to start messaging</h3>
-            `;
-        document.getElementById("chat-messages").innerHTML = "";
-      }
-
-      // Function to send a new message
-      function sendMessage() {
-        if (!selectedUserId) return;
-
-        const messageInput = document.getElementById("message-input");
-        const messageText = messageInput.value.trim();
-        if (!messageText) return;
-
-        // Add the message to the user's messages
-        const user = chatData.users.find((u) => u.id === selectedUserId);
-        if (user) {
-          const newMessage = {
-            sender: "You",
-            text: messageText,
-            timestamp: new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          };
-          user.messages.push(newMessage);
-          user.lastMessage = messageText;
-
-          // Reload the chat list and messages
-          loadChatList();
-          openChat(selectedUserId);
-
-          // Clear the input
-          messageInput.value = "";
-        }
-      }
-
-      // Handle Enter key to send message
       document
         .getElementById("message-input")
         .addEventListener("keypress", function (e) {
-          if (e.key === "Enter") {
-            sendMessage();
-          }
+          if (e.key === "Enter") sendMessage();
         });
 
-      // Prevent text selection (except in input fields)
-      document.body.style.userSelect = "none";
-      document.body.style.webkitUserSelect = "none";
-      document.body.style.MozUserSelect = "none";
-      document.body.style.msUserSelect = "none";
+      async function loadChatList() {
+        try {
+          const res = await fetch(
+            "http://127.0.0.1:3000/nt_backends_api/v1/getchats",
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
-      // Allow text selection in input fields
-      document.querySelectorAll("input").forEach((input) => {
-        input.style.userSelect = "auto";
-        input.style.webkitUserSelect = "auto";
-        input.style.MozUserSelect = "auto";
-        input.style.msUserSelect = "auto";
-      });
+          if (!res.ok) throw new Error("Unauthorized or expired session");
 
-      // Prevent dragging of links/buttons
-      document.querySelectorAll("a, button").forEach((element) => {
-        element.addEventListener("dragstart", function (e) {
-          e.preventDefault();
+          const data = await res.json();
+          chatData.users = data.users;
+          const chatList = document.getElementById("chat-list");
+          chatList.innerHTML = "";
+
+          chatData.users.forEach((user) => {
+            const div = document.createElement("div");
+            div.classList.add("chat-item");
+            div.innerHTML = `<div class="chat-info"><h4>${user.name}</h4><p>${
+              user.lastMessage || ""
+            }</p></div>`;
+            div.onclick = () => {
+              document.getElementById("target-username").value = user.name;
+              document.getElementById("chat-main").style.display = "flex";
+            };
+            chatList.appendChild(div);
+          });
+        } catch (err) {
+          alert(err.message);
+          //logout();
+        }
+      }
+
+      function logout() {
+        fetch("http://127.0.0.1:3000/nt_backends_api/v1/signout", {
+       
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }).finally(() => {
+          sessionStorage.clear();
+          window.location.href = "./index.html";
         });
-      });
-
-      // Prevent long-click (context menu) and long-press on links/buttons
-      document.querySelectorAll("a, button").forEach((element) => {
-        element.addEventListener("contextmenu", function (e) {
-          e.preventDefault();
-        });
-
-        let touchTimer;
-        element.addEventListener("touchstart", function (e) {
-          touchTimer = setTimeout(() => {
-            e.preventDefault();
-          }, 500);
-        });
-
-        element.addEventListener("touchend", function (e) {
-          clearTimeout(touchTimer);
-        });
-
-        element.addEventListener("touchmove", function (e) {
-          clearTimeout(touchTimer);
-        });
-      });
-      // Prevent dragging globally
-      document.addEventListener("drag", function (e) {
-        e.preventDefault();
-      });
+      }
+      register();
+      loadChatList();
     </script>
   </body>
 </html>
