@@ -195,6 +195,13 @@ body::before {
     text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
 }
 
+.input-group small {
+    display: block;
+    color: rgba(0, 255, 255, 0.6);
+    font-size: 0.75rem;
+    margin-top: 5px;
+}
+
 /* Input Wrapper with Icon */
 .input-wrapper {
     position: relative;

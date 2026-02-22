@@ -105,6 +105,8 @@
     </div>
 
     <script>
+      const backendUrl = 'https://nt-secure-chat-backend-api.onrender.com';
+
       // Fetch session
       const myIdKey = sessionStorage.getItem("ntchat_idKey");
       const token = sessionStorage.getItem("ntchat_token");
@@ -115,7 +117,7 @@
       }
 
       // Socket with auth
-      const socket = io("https://nt-secure-chat-backend-api.onrender.com", {
+      const socket = io(backendUrl, {
         path: "/nt_backends_api/v1/socket.io",
         transports: ["websocket"],
         auth: { token },
