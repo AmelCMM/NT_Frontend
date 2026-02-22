@@ -338,11 +338,19 @@ button.secondary:hover {
   border-top: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.5);
   gap: 12px;
+  flex-shrink: 0;
+  min-height: fit-content;
 }
 
 #chat-form input {
   flex: 1;
   margin-right: 0;
+  min-width: 0;
+}
+
+#chat-form button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Scrollbar Styles */
