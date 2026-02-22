@@ -10,6 +10,29 @@
     />
     <link rel="stylesheet" href="./chatView.css" />
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+      .session-info {
+        font-size: 12px;
+        color: #999;
+        padding: 5px 10px;
+        border-top: 1px solid #eee;
+        margin-top: auto;
+      }
+      .logout-btn {
+        background: #d32f2f;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-top: 10px;
+        width: 100%;
+      }
+      .logout-btn:hover {
+        background: #b71c1c;
+      }
+    </style>
   </head>
   <body>
     <div id="sidebar">
@@ -21,7 +44,7 @@
           <input
             type="text"
             id="newUser"
-            placeholder="Enter username to chat with"
+            placeholder="Paste ID key to chat with"
           />
         </div>
         <button onclick="addToChat()">
@@ -44,6 +67,10 @@
         </button>
       </div>
       <div id="user-list"></div>
+      <div class="session-info">
+        <p>⏱️ Session timeout: 10 min</p>
+        <button class="logout-btn" onclick="logout()">Sign Out</button>
+      </div>
     </div>
 
     <div id="chat-area">
@@ -79,15 +106,16 @@
 
     <script>
       // Fetch session
-      const username = sessionStorage.getItem("ntchat_user");
+      const myIdKey = sessionStorage.getItem("ntchat_idKey");
       const token = sessionStorage.getItem("ntchat_token");
-      if (!username || !token) {
-        alert("Please login to continue");
+      
+      if (!myIdKey || !token) {
+        alert("Session expired or invalid. Please login again.");
         window.location.href = "index.html";
       }
 
       // Socket with auth
-      const socket = io(" https://nt-secure-chat-backend-api.onrender.com", {
+      const socket = io("https://nt-secure-chat-backend-api.onrender.com", {
         path: "/nt_backends_api/v1/socket.io",
         transports: ["websocket"],
         auth: { token },
@@ -104,12 +132,17 @@
       const chatForm = document.getElementById("chat-form");
       const msgInput = document.getElementById("message");
 
-      socket.on("connect", async () => {
-        chatHeader.innerHTML = `<h3>Welcome, ${
-          JSON.parse(username).username
-        }</h3>`;
+      // Handle session expiration
+      socket.on("session_expired", ({ reason }) => {
+        alert("Session expired: " + reason + ". Please login again.");
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      });
 
-        // Generate ECDH keys
+      socket.on("connect", async () => {
+        chatHeader.innerHTML = `<h3>Logged in ✓</h3>`;
+
+        // Generate ECDH keys for encryption
         const keys = await window.crypto.subtle.generateKey(
           { name: "ECDH", namedCurve: "P-256" },
           true,
@@ -119,42 +152,68 @@
         myPub = keys.publicKey;
         const raw = await window.crypto.subtle.exportKey("raw", myPub);
         const pubB64 = btoa(String.fromCharCode(...new Uint8Array(raw)));
-        socket.emit("register", { username, publicKey: pubB64 });
+        socket.emit("register", { publicKey: pubB64 });
+      });
+
+      socket.on("connect_error", (error) => {
+        console.error("Connection error:", error);
+        alert("Connection failed. Redirecting to login...");
+        window.location.href = "index.html";
       });
 
       function addToChat() {
-        const user = document.getElementById("newUser").value.trim();
-        if (user && user !== username && !chatUsers.has(user)) {
-          chatUsers.add(user);
+        const idkey = document.getElementById("newUser").value.trim();
+        if (!idkey) {
+          alert("Please enter an ID key");
+          return;
+        }
+
+        if (idkey.length !== 256) {
+          alert("ID key must be 256 characters");
+          return;
+        }
+
+        if (idkey === myIdKey) {
+          alert("You cannot chat with yourself!");
+          return;
+        }
+
+        if (!chatUsers.has(idkey)) {
+          chatUsers.add(idkey);
           const div = document.createElement("div");
           div.className = "chat-user";
 
           // Create avatar with first letter
           const avatar = document.createElement("div");
           avatar.className = "user-avatar";
-          avatar.textContent = user.charAt(0).toUpperCase();
+          avatar.textContent = idkey.substring(0, 2).toUpperCase();
 
-          // Create username span
+          // Create truncated idkey display (first 16 + last 16 chars)
           const nameSpan = document.createElement("span");
-          nameSpan.textContent = user;
+          const shortKey = idkey.substring(0, 8) + "..." + idkey.substring(-8);
+          nameSpan.textContent = shortKey;
+          nameSpan.title = idkey;
 
           div.appendChild(avatar);
           div.appendChild(nameSpan);
-          div.onclick = () => selectChat(user, div);
+          div.onclick = () => selectChat(idkey, div);
           userListDiv.appendChild(div);
           document.getElementById("newUser").value = "";
+        } else {
+          alert("Contact already added");
         }
       }
 
-      function selectChat(user, el) {
-        activeChat = user;
-        chatHeader.innerHTML = `<h3>Chatting with ${user}</h3>`;
+      function selectChat(idkey, el) {
+        activeChat = idkey;
+        const shortKey = idkey.substring(0, 8) + "..." + idkey.substring(-8);
+        chatHeader.innerHTML = `<h3>Chatting with: ${shortKey}</h3>`;
         chatBox.innerHTML = "";
         document
           .querySelectorAll(".chat-user")
           .forEach((e) => e.classList.remove("active"));
         el.classList.add("active");
-        socket.emit("load_history", { withUser: user });
+        socket.emit("load_history", { withUser: idkey });
       }
 
       socket.on("chat_history", ({ history }) => {
@@ -185,11 +244,11 @@
 
         socket.emit("private_message", {
           to: activeChat,
-          from: username,
+          from: myIdKey,
           encrypted: payload,
         });
 
-        displayMessage(username, txt);
+        displayMessage(myIdKey, txt);
         msgInput.value = "";
       });
 
@@ -241,11 +300,11 @@
       function displayMessage(sender, message) {
         const div = document.createElement("div");
         div.className =
-          "message " + (sender === username ? "my-message" : "their-message");
+          "message " + (sender === myIdKey ? "my-message" : "their-message");
 
         const usernameDiv = document.createElement("div");
         usernameDiv.className = "message-username";
-        usernameDiv.textContent = sender === username ? "You" : sender;
+        usernameDiv.textContent = sender === myIdKey ? "You" : "Them";
 
         const messageDiv = document.createElement("div");
         messageDiv.textContent = message;
@@ -254,6 +313,14 @@
         div.appendChild(messageDiv);
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function logout() {
+        if (confirm("Are you sure you want to sign out?")) {
+          sessionStorage.clear();
+          socket.disconnect();
+          window.location.href = "index.html";
+        }
       }
     </script>
   </body>
