@@ -561,6 +561,7 @@ body::before {
 
 /* Error Message */
 .error-message {
+    display: none;
     background: rgba(255, 20, 70, 0.1);
     border: 1px solid rgba(255, 20, 70, 0.5);
     color: #ff3366;
