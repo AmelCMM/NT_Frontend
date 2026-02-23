@@ -1,4 +1,4 @@
-# Lumina Messaging - Frontend
+# NT Chat - Frontend
 
 A modern, end-to-end encrypted messaging platform with a cyberpunk-inspired user interface. This frontend application provides secure, real-time communication between users with zero-knowledge architecture ensuring complete privacy.
 
@@ -160,3 +160,4 @@ const socket = io(backendUrl, {
 ## Support
 
 For issues or questions, refer to the main project README or contact the development team.
+
